@@ -2,8 +2,8 @@
 VERSION = 5
 PATCHLEVEL = 10
 SUBLEVEL = 255
-EXTRAVERSION =
-NAME = Dare mighty things
+EXTRAVERSION = -rinnsakaguchi-pro
+NAME = Jhonneiber
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
