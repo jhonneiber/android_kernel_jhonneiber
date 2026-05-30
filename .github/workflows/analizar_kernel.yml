@@ -34,16 +34,15 @@ jobs:
         target remote :1234
         set architecture aarch64
         
-        # NUEVA ESTRATEGIA: Ponemos el breakpoint en el inicio real del kernel
-        break *0x40080000
+        # CAMBIO CLAVE: Ponemos el breakpoint en el destino real del salto (stext)
+        break *0x41580000
         
-        # Le decimos a la CPU que corra hasta llegar al breakpoint
         continue
         
-        echo \n--- ¡ENTRAMOS AL KERNEL DE INFINIX! (PRIMERAS INSTRUCCIONES) ---\n
-        x/20i $pc
+        echo \n--- ¡LLEGAMOS A LA INICIALIZACIÓN REAL DEL KERNEL (stext)! ---\n
+        x/30i $pc
         
-        echo \n--- ESTADO DE LOS REGISTROS EN EL ENTRY POINT ---\n
+        echo \n--- ESTADO DE LOS REGISTROS EN STEXT ---\n
         info registers
         quit
         EOF
