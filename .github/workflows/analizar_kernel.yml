@@ -18,14 +18,25 @@ jobs:
           kernel_descomprimido
         sparse-checkout-cone-mode: false
 
-    - name: Instalar QEMU y GDB Multiarch
+    - name: Instalar QEMU, GDB y Herramientas de DTB
       run: |
         sudo apt-get update
-        sudo apt-get install -y qemu-system-arm gdb-multiarch
+        sudo apt-get install -y qemu-system-arm gdb-multiarch device-tree-compiler
 
-    - name: Iniciar QEMU en segundo plano (Emulación congelada)
+    - name: Descargar y Extraer el DTB Real del Infinix
       run: |
-        qemu-system-aarch64 -M virt -cpu cortex-a57 -kernel ./kernel_descomprimido -nographic -s -S > qemu_output.log 2>&1 &
+        # Descargamos el dtb.img desde el GitHub que me pasaste
+        curl -L -o dtb.img https://github.com/thequantumcog/device_infinix_X6831/raw/12.1/prebuilt/dtb.img
+        
+        # Intentamos extraer el primer DTB limpio del paquete img
+        # Los dtb.img de MediaTek suelen empezar con la firma "DTBH" o directamente "0xd00dfeed"
+        # Usamos dtc para verificar o separar si es necesario. Por ahora lo trataremos directamente:
+        cp dtb.img infinix.dtb
+
+    - name: Iniciar QEMU con el DTB del Infinix
+      run: |
+        # Agregamos el parámetro -dtb para que el Kernel lea tu hardware real
+        qemu-system-aarch64 -M virt -cpu cortex-a57 -kernel ./kernel_descomprimido -dtb ./infinix.dtb -nographic -s -S > qemu_output.log 2>&1 &
         sleep 2 
 
     - name: Crear script de traducción para GDB
@@ -34,15 +45,15 @@ jobs:
         target remote :1234
         set architecture aarch64
         
-        # OBJETIVO ACTUAL: Entrar al bloque de código de la dirección 0x4105c36c
-        break *0x4105c36c
+        # Ponemos el breakpoint justo DESPUÉS de que se encienda la MMU
+        break *0x4105c3bc
         
         continue
         
-        echo \n--- ¡LLEGAMOS A LA FASE DE CONFIGURACIÓN AVANZADA (0x4105c36c)! ---\n
-        x/30i $pc
+        echo \n--- ¡MMU ACTIVADA CON DTB REAL! ---\n
+        x/20i $pc
         
-        echo \n--- ESTADO DE LOS REGISTROS ---
+        echo \n--- REGISTROS POST-MMU ---\n
         info registers
         quit
         EOF
