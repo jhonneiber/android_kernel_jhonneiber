@@ -1,9 +1,8 @@
 name: Laboratorio de Ingenieria Inversa del Kernel
 
 on:
-  workflow_dispatch: # Esto te permite activar el análisis manualmente con un botón
+  workflow_dispatch: 
 
-# SOLUCIÓN: Forzamos a GitHub a usar Node 24 para eliminar la advertencia
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
@@ -34,11 +33,17 @@ jobs:
         cat << 'EOF' > gdb_commands.txt
         target remote :1234
         set architecture aarch64
-        echo \n--- TRADUCCIÓN DE LAS PRIMERAS INSTRUCCIONES EN RAM ---\n
-        display/10i $pc
-        stepi
-        stepi
-        echo \n--- ESTADO DE LOS REGISTROS DE LA CPU ---\n
+        
+        # NUEVA ESTRATEGIA: Ponemos el breakpoint en el inicio real del kernel
+        break *0x40080000
+        
+        # Le decimos a la CPU que corra hasta llegar al breakpoint
+        continue
+        
+        echo \n--- ¡ENTRAMOS AL KERNEL DE INFINIX! (PRIMERAS INSTRUCCIONES) ---\n
+        x/20i $pc
+        
+        echo \n--- ESTADO DE LOS REGISTROS EN EL ENTRY POINT ---\n
         info registers
         quit
         EOF
