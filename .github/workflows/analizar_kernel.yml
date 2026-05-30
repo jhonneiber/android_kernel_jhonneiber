@@ -34,15 +34,15 @@ jobs:
         target remote :1234
         set architecture aarch64
         
-        # CAMBIO CLAVE: Ponemos el breakpoint en el destino real del salto (stext)
-        break *0x41580000
+        # OBJETIVO ACTUAL: Entrar al bloque de código de la dirección 0x4105c36c
+        break *0x4105c36c
         
         continue
         
-        echo \n--- ¡LLEGAMOS A LA INICIALIZACIÓN REAL DEL KERNEL (stext)! ---\n
+        echo \n--- ¡LLEGAMOS A LA FASE DE CONFIGURACIÓN AVANZADA (0x4105c36c)! ---\n
         x/30i $pc
         
-        echo \n--- ESTADO DE LOS REGISTROS EN STEXT ---\n
+        echo \n--- ESTADO DE LOS REGISTROS ---
         info registers
         quit
         EOF
