@@ -8,8 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Clonar el repositorio actual
+    # MODIFICADO: No clona el repositorio completo, solo jala el archivo del kernel
+    - name: Descargar únicamente el archivo kernel
       uses: actions/checkout@v4
+      with:
+        sparse-checkout: |
+          kernel_descomprimido
+        sparse-checkout-cone-mode: false
 
     - name: Instalar QEMU y GDB Multiarch
       run: |
