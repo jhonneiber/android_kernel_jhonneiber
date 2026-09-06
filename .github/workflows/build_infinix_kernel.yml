@@ -14,6 +14,7 @@ on:
           - "ubuntu-clang"
   push:
     branches:
+      - "infinix-x6831-clean"
       - "infinix-x6831-port"
       - "main"
     paths-ignore:
