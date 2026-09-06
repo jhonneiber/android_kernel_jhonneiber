@@ -1,0 +1,123 @@
+name: Build Infinix Hot 30 Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      toolchain:
+        description: "Toolchain to use"
+        required: true
+        default: "proton-clang"
+        type: choice
+        options:
+          - "proton-clang"
+          - "aosp-clang"
+          - "ubuntu-clang"
+  push:
+    branches:
+      - "infinix-x6831-port"
+      - "main"
+    paths-ignore:
+      - "README.md"
+      - "docs/**"
+
+jobs:
+  build:
+    name: Compile Kernel & Pack Boot Image
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Kernel Source
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 1
+
+      - name: Install Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ca-certificates ccache clang curl flex \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi git libelf-dev \
+            libssl-dev lld llvm make python3 python3-pip unzip wget xz-utils zip
+
+      - name: Setup Compiler Toolchain
+        run: |
+          mkdir -p toolchain
+          TOOLCHAIN_CHOICE="${{ github.event.inputs.toolchain || 'proton-clang' }}"
+          echo "[*] Setting up toolchain: ${TOOLCHAIN_CHOICE}..."
+          if [ "${TOOLCHAIN_CHOICE}" = "proton-clang" ]; then
+            git clone --depth=1 https://github.com/kdrag0n/proton-clang.git toolchain/clang
+            echo "CLANG_DIR=${GITHUB_WORKSPACE}/toolchain/clang" >> $GITHUB_ENV
+            echo "${GITHUB_WORKSPACE}/toolchain/clang/bin" >> $GITHUB_PATH
+          elif [ "${TOOLCHAIN_CHOICE}" = "aosp-clang" ]; then
+            wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/android-11.0.0_r3/clang-r383902.tar.gz -O clang.tar.gz
+            mkdir -p toolchain/clang
+            tar -xzf clang.tar.gz -C toolchain/clang
+            rm -f clang.tar.gz
+            echo "CLANG_DIR=${GITHUB_WORKSPACE}/toolchain/clang" >> $GITHUB_ENV
+            echo "${GITHUB_WORKSPACE}/toolchain/clang/bin" >> $GITHUB_PATH
+          else
+            echo "Using system Ubuntu Clang..."
+          fi
+
+      - name: Build Kernel (infinix_x6831_defconfig)
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=aarch64-linux-gnu-
+          export CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+          export CC=clang
+          export LD=ld.lld
+          export AR=llvm-ar
+          export NM=llvm-nm
+          export OBJCOPY=llvm-objcopy
+          export OBJDUMP=llvm-objdump
+          export STRIP=llvm-strip
+
+          OUT_DIR=out
+          mkdir -p ${OUT_DIR}
+
+          echo "=== 1. Generating Configuration ==="
+          make O=${OUT_DIR} ARCH=arm64 infinix_x6831_defconfig
+
+          echo "=== 2. Compiling Kernel (Image.gz) ==="
+          make -j$(nproc --all) O=${OUT_DIR} \
+            ARCH=arm64 \
+            CC=clang \
+            LD=ld.lld \
+            AR=llvm-ar \
+            NM=llvm-nm \
+            OBJCOPY=llvm-objcopy \
+            OBJDUMP=llvm-objdump \
+            STRIP=llvm-strip \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_COMPAT=arm-linux-gnueabi- \
+            Image.gz 2>&1 | tee build.log
+
+          if [ ! -f "${OUT_DIR}/arch/arm64/boot/Image.gz" ]; then
+            echo "[-] Error: Image.gz was not generated!"
+            exit 1
+          fi
+          echo "[+] Kernel Image.gz compiled successfully!"
+
+      - name: Pack Boot Image (Infinix Hot 30 Boot Header v2)
+        run: |
+          python3 tools/pack_boot.py \
+            --kernel out/arch/arm64/boot/Image.gz \
+            --ramdisk boot_blobs/ramdisk.img \
+            --dtb boot_blobs/boot.dtb \
+            --output boot_ported.img
+
+          ls -la boot_ported.img
+          sha256sum boot_ported.img > boot_ported.img.sha256
+
+      - name: Upload Boot Image Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: infinix-hot30-boot-image
+          path: |
+            boot_ported.img
+            boot_ported.img.sha256
+            out/arch/arm64/boot/Image.gz
+            out/.config
+            build.log
+          retention-days: 7
