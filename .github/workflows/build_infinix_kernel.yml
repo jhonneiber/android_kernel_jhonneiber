@@ -14,9 +14,10 @@ on:
           - "ubuntu-clang"
   push:
     branches:
+      - "main"
+      - "master"
       - "infinix-x6831-clean"
       - "infinix-x6831-port"
-      - "main"
     paths-ignore:
       - "README.md"
       - "docs/**"
@@ -81,10 +82,12 @@ jobs:
           make O=${OUT_DIR} ARCH=arm64 infinix_x6831_defconfig
           make O=${OUT_DIR} ARCH=arm64 olddefconfig
 
+          set -o pipefail
           echo "=== 2. Compiling Kernel (Image.gz) ==="
           make -j$(nproc --all) O=${OUT_DIR} \
             ARCH=arm64 \
             CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
             LD=ld.lld \
             AR=llvm-ar \
             NM=llvm-nm \

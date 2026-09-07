@@ -1086,13 +1086,12 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 		} else {
 			lcm_drv = lcm_driver_list[0];
 			if (strcmp(lcm_drv->name, plcm_name)) {
-				DISPERR(
-					"FATAL ERROR!!!LCM Driver defined in kernel(%s) is different with LK(%s)\n",
+				DISPCHECK(
+					"PORT WARNING: LCM Driver defined in kernel(%s) is different with LK(%s), reusing framebuffer\n",
 				    lcm_drv->name, plcm_name);
-				return NULL;
 			}
 
-			isLCMInited = true;
+			isLCMInited = is_lcm_inited ? true : false;
 			isLCMFound = true;
 		}
 
@@ -1118,8 +1117,8 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 				}
 			}
 			if (!isLCMFound) {
-				DISPERR(
-					"FATAL ERROR: can't found lcm driver:%s in linux kernel driver\n",
+				DISPCHECK(
+					"PORT NOTICE: can't find lcm driver:%s in linux kernel, fallback will be used\n",
 				    plcm_name);
 			} else if (!is_lcm_inited) {
 				isLCMInited = false;
@@ -1130,8 +1129,19 @@ struct disp_lcm_handle *disp_lcm_probe(char *plcm_name,
 	}
 
 	if (isLCMFound == false) {
-		DISPERR("FATAL ERROR!!!No LCM Driver defined\n");
-		return NULL;
+		if (_lcm_count() > 0) {
+			DISPCHECK("PORT NOTICE: LCM driver for [%s] not found in list, falling back to default driver [%s] (is_lcm_inited=%d)\n",
+				plcm_name ? plcm_name : "NULL",
+				lcm_driver_list[0]->name,
+				is_lcm_inited);
+			lcm_drv = lcm_driver_list[0];
+			isLCMFound = true;
+			isLCMInited = is_lcm_inited ? true : false;
+			lcmindex = 0;
+		} else {
+			DISPERR("FATAL ERROR!!!No LCM Driver defined\n");
+			return NULL;
+		}
 	}
 
 	plcm = kzalloc(sizeof(uint8_t *) *
