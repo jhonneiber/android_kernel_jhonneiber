@@ -81,6 +81,11 @@ int enter_palm_mode(struct fts_ts_data *data);
 int fts_palm_sensor_write(int value);
 static int fts_get_mode_cur_value(int mode);
 int fts_palm_sensor_cmd(int on);
+#else
+static inline int enter_palm_mode(struct fts_ts_data *data)
+{
+	return 0;
+}
 #endif
 
 static struct work_struct fts_charger_detect_work;
@@ -1080,6 +1085,7 @@ static int fts_input_pen_init(struct fts_ts_data *ts_data)
 }
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 int enter_palm_mode(struct fts_ts_data *data)
 {
 	u8 mode0 = 0;
@@ -1095,6 +1101,7 @@ int enter_palm_mode(struct fts_ts_data *data)
 	}
 	return 0;
 }
+#endif
 
 static int fts_input_init(struct fts_ts_data *ts_data)
 {
