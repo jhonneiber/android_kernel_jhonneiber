@@ -30,6 +30,7 @@ mkdir -p "${OUT_DIR}"
 
 echo "[*] Step 1: Generating .config from ${DEFCONFIG}..."
 make O="${OUT_DIR}" ARCH=arm64 "${DEFCONFIG}"
+make O="${OUT_DIR}" ARCH=arm64 olddefconfig
 
 echo "[*] Step 2: Compiling Kernel (Image.gz)..."
 make -j"$(nproc 2>/dev/null || echo 4)" O="${OUT_DIR}"     ARCH=arm64     CC="${CC}"     LD="${LD}"     AR="${AR}"     NM="${NM}"     OBJCOPY="${OBJCOPY}"     OBJDUMP="${OBJDUMP}"     STRIP="${STRIP}"     CROSS_COMPILE="${CROSS_COMPILE}"     CROSS_COMPILE_COMPAT="${CROSS_COMPILE_COMPAT}"     Image.gz

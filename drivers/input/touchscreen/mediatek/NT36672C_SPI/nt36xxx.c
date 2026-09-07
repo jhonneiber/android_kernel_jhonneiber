@@ -97,7 +97,15 @@ static void nvt_ts_early_suspend(struct early_suspend *h);
 static void nvt_ts_late_resume(struct early_suspend *h);
 #endif
 
+#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 static int32_t nvt_check_palm(uint8_t input_id, uint8_t *data);
+#else
+/* When Xiaomi touch feature is not enabled, provide a stub so calls compile cleanly */
+static inline int32_t nvt_check_palm(uint8_t input_id, uint8_t *data)
+{
+	return 0;
+}
+#endif
 int nvt_charger_flag;
 #define NVT_KEY_DOUBLE_CLICK 143
 
@@ -1254,7 +1262,7 @@ static void nvt_esd_check_func(struct work_struct *work)
 #ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
 
 static struct xiaomi_touch_interface xiaomi_touch_interfaces;
-int32_t nvt_check_palm(uint8_t input_id, uint8_t *data)
+static int32_t nvt_check_palm(uint8_t input_id, uint8_t *data)
 {
 	int32_t ret = 0;
 	uint8_t func_type = data[2];

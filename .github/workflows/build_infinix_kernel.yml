@@ -79,6 +79,7 @@ jobs:
 
           echo "=== 1. Generating Configuration ==="
           make O=${OUT_DIR} ARCH=arm64 infinix_x6831_defconfig
+          make O=${OUT_DIR} ARCH=arm64 olddefconfig
 
           echo "=== 2. Compiling Kernel (Image.gz) ==="
           make -j$(nproc --all) O=${OUT_DIR} \
